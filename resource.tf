@@ -1,5 +1,6 @@
 resource "aws_ecs_cluster" "my_cluster" {
   name = var.ecs_cluster_name
+  capacity_providers = [aws_ecs_capacity_provider.demoCapacity.name]
 }
 
 resource "aws_vpc" "vpc" {
@@ -119,6 +120,22 @@ resource "aws_autoscaling_group" "ecs_instance_asg" {
   launch_template {
     id = aws_launch_template.ecs_instance_lt.id
     version = "$Latest"
+  }
+}
+
+resource "aws_ecs_capacity_provider" "demoCapacity" {
+  name = "demoCapacity"
+
+  auto_scaling_group_provider {
+    auto_scaling_group_arn         = aws_autoscaling_group.ecs_instance_asg.arn
+    managed_termination_protection = "DISABLED"
+
+    managed_scaling {
+      maximum_scaling_step_size = 3
+      minimum_scaling_step_size = 1
+      status                    = "ENABLED"
+      target_capacity           = 10
+    }
   }
 }
 
