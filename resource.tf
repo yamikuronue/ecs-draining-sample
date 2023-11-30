@@ -11,21 +11,21 @@ resource "aws_vpc" "vpc" {
 
 resource "aws_subnet" "pub_subnet_az1" {
   count = local.CreateSubnet1 ? 1 : 0
-  vpc_id = aws_vpc.vpc[0].arn
+  vpc_id = aws_vpc.vpc[0].id
   cidr_block = var.subnet_cidr1
   availability_zone = element(var.vpc_availability_zones, 0)
 }
 
 resource "aws_subnet" "pub_subnet_az2" {
   count = local.CreateSubnet2 ? 1 : 0
-  vpc_id = aws_vpc.vpc[0].arn
+  vpc_id = aws_vpc.vpc[0].id
   cidr_block = var.subnet_cidr2
   availability_zone = element(var.vpc_availability_zones, 1)
 }
 
 resource "aws_subnet" "pub_subnet_az3" {
   count = local.CreateSubnet3 ? 1 : 0
-  vpc_id = aws_vpc.vpc[0].arn
+  vpc_id = aws_vpc.vpc[0].id
   cidr_block = var.subnet_cidr3
   availability_zone = element(var.vpc_availability_zones, 2)
 }
@@ -37,7 +37,7 @@ resource "aws_internet_gateway" "internet_gateway" {
 
 resource "aws_route_table" "route_via_igw" {
   count = local.CreateSubnet1 ? 1 : 0
-  vpc_id = aws_vpc.vpc[0].arn
+  vpc_id = aws_vpc.vpc[0].id
 }
 
 resource "aws_route" "public_route_via_igw" {
@@ -68,7 +68,7 @@ resource "aws_route_table_association" "pub_subnet3_route_table_association" {
 resource "aws_security_group" "ecs_security_group" {
   count = local.CreateNewSecurityGroup ? 1 : 0
   description = "ECS Allowed Ports"
-  vpc_id = local.CreateSubnet1 ? aws_vpc.vpc[0].arn : var.vpc_id
+  vpc_id = local.CreateSubnet1 ? aws_vpc.vpc[0].id : var.vpc_id
   ingress {
     protocol = "tcp"
     from_port = var.security_ingress_from_port
@@ -80,7 +80,7 @@ resource "aws_security_group" "ecs_security_group" {
 resource "aws_launch_configuration" "ecs_instance_lc" {
   image_id = var.ecs_ami_id
   instance_type = var.ecs_instance_type
-  associate_public_ip_address = true
+  associate_public_ip_address = false
   iam_instance_profile = var.iam_role_instance_profile
   key_name = local.CreateEC2LCWithKeyPair ? var.key_name : null
   security_groups = [
