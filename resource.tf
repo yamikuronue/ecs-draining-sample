@@ -77,41 +77,59 @@ resource "aws_security_group" "ecs_security_group" {
   }
 }
 
-resource "aws_launch_configuration" "ecs_instance_lc" {
-  image_id = var.ecs_ami_id
-  instance_type = var.ecs_instance_type
-  associate_public_ip_address = false
-  iam_instance_profile = var.iam_role_instance_profile
-  key_name = local.CreateEC2LCWithKeyPair ? var.key_name : null
-  security_groups = [
-    local.CreateNewSecurityGroup ? aws_security_group.ecs_security_group[0].arn : var.security_group_id
-  ]
-  ebs_block_device {
-      device_name = "/dev/sdm"
+resource "aws_launch_template" "ecs_instance_lt" {
+  name = "ecs_instance_demo"
+
+  block_device_mappings {
+    device_name = "/dev/sdm"
+
+    ebs {
       volume_type = "gp2"
       volume_size = 20
-      iops = "200"
+    }
   }
+
+  ebs_optimized = true
+
+  iam_instance_profile {
+    name = var.iam_role_instance_profile
+  }
+
+  image_id = var.ecs_ami_id
+
+  instance_type = var.ecs_instance_type
+
+  key_name = local.CreateEC2LCWithKeyPair ? var.key_name : null
+
+  monitoring {
+    enabled = true
+  }
+
+  vpc_security_group_ids = [ local.CreateNewSecurityGroup ? aws_security_group.ecs_security_group[0].id : var.security_group_id]
 
   user_data = base64encode("#!/bin/bash \n echo ECS_CLUSTER=${var.ecs_cluster_name} >> /etc/ecs/ecs.config\n")
 }
 
 resource "aws_autoscaling_group" "ecs_instance_asg" {
-  availability_zones = local.CreateSubnet1 ? local.CreateSubnet2 ? local.CreateSubnet3 ? [aws_subnet.pub_subnet_az1[0].id, aws_subnet.pub_subnet_az2[0].id, aws_subnet.pub_subnet_az3[0].id] : [aws_subnet.pub_subnet_az1[0].id, aws_subnet.pub_subnet_az2[0].id] : [aws_subnet.pub_subnet_az1[0].id] : var.subnet_ids
+  vpc_zone_identifier = local.CreateSubnet1 ? local.CreateSubnet2 ? local.CreateSubnet3 ? [aws_subnet.pub_subnet_az1[0].id, aws_subnet.pub_subnet_az2[0].id, aws_subnet.pub_subnet_az3[0].id] : [aws_subnet.pub_subnet_az1[0].id, aws_subnet.pub_subnet_az2[0].id] : [aws_subnet.pub_subnet_az1[0].id] : var.subnet_ids
   desired_capacity   = 3
   max_size           = 3
   min_size           = 0
 
-  launch_configuration = aws_launch_configuration.ecs_instance_lc.arn
+  launch_template {
+    id = aws_launch_template.ecs_instance_lt.id
+    version = "$Latest"
+  }
 }
 
 resource "aws_autoscaling_lifecycle_hook" "ecs_instance_asg_lifecycle_hook" {
   name                   = "foobar"
   autoscaling_group_name = aws_autoscaling_group.ecs_instance_asg.name
   default_result         = "CONTINUE"
-  lifecycle_transition   = "autoscaling:EC2_INSTANCE_TERMINATE"
+  lifecycle_transition   = "autoscaling:EC2_INSTANCE_TERMINATING"
 
   notification_target_arn = aws_sns_topic.asgsns_topic.id
+  role_arn = aws_iam_role.sns_lambda_role.arn
 }
 
 resource "aws_ecs_task_definition" "taskdefinition" {

@@ -18,7 +18,7 @@ variable ecs_ami_id {
 variable ecs_instance_type {
   description = "Specifies the EC2 instance type for your container instances. Defaults to t2.medium"
   type = string
-  default = "t2.medium"
+  default = "m5.large"
 }
 
 variable vpc_id {
