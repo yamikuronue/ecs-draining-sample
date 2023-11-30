@@ -168,7 +168,7 @@ resource "aws_ecs_task_definition" "taskdefinition" {
 }
 
 resource "aws_ecs_service" "demo_service" {
-  name = "demo service"
+  name = "demo_service"
   cluster = aws_ecs_cluster.my_cluster.arn
   deployment_maximum_percent = 100
   deployment_minimum_healthy_percent = 50
@@ -309,6 +309,7 @@ resource "aws_lambda_function" "lambda_function_for_asg" {
   runtime = "python3.9"
   memory_size = 128
   timeout = 60
+  filename      = "${path.module}/lambda_function_payload.zip"
   source_code_hash = data.archive_file.lambda.output_base64sha256
 }
 
