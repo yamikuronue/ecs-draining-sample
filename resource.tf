@@ -360,14 +360,3 @@ resource "aws_sns_topic_subscription" "lambda_subscription_to_sns_topic" {
   protocol = "lambda"
   topic_arn = aws_sns_topic.asgsns_topic.id
 }
-
-resource "aws_autoscaling_lifecycle_hook" "asg_terminate_hook" {
-  name = "asg_terminate_hook"
-  autoscaling_group_name = aws_autoscaling_group.ecs_instance_asg.id
-  default_result = "ABANDON"
-  heartbeat_timeout = "900"
-  lifecycle_transition = "autoscaling:EC2_INSTANCE_TERMINATING"
-  notification_target_arn = aws_sns_topic.asgsns_topic.id
-  role_arn = aws_iam_role.sns_lambda_role.arn
-}
-
