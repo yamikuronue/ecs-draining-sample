@@ -1,6 +1,6 @@
 output "ecs_instance_asg_name" {
   description = "Auto Scaling Group Name for ECS Instances"
-  value = aws_autoscalingplans_scaling_plan.ecs_instance_asg.id
+  value = aws_autoscaling_group.ecs_instance_asg.id
 }
 
 output "sns_topic_for_asg" {
