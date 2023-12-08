@@ -10,9 +10,9 @@ variable key_name {
 }
 
 variable ecs_ami_id {
-  description = "REQUIRED - Default ECS Optimized AMI for us-west-2 region. Please change it to reflect your regions' latest ECS AMI-ID"
+  description = "REQUIRED - Default ECS Optimized AMI for us-east-1 region. Please change it to reflect your regions' latest ECS AMI-ID"
   type = string
-  default = "ami-8e7bc4ee"
+  default = "ami-0b74aeb97fba885ea"
 }
 
 variable ecs_instance_type {

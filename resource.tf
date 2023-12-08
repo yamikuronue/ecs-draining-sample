@@ -76,6 +76,13 @@ resource "aws_security_group" "ecs_security_group" {
     to_port = var.security_ingress_to_port
     cidr_blocks = var.security_ingress_cidr_ip
   }
+
+  egress {
+     from_port   = 0
+     to_port     = 0
+     protocol    = "-1"
+     cidr_blocks = ["0.0.0.0/0"]
+   }
 }
 
 resource "aws_launch_template" "ecs_instance_lt" {
@@ -102,24 +109,27 @@ resource "aws_launch_template" "ecs_instance_lt" {
 
   key_name = local.CreateEC2LCWithKeyPair ? var.key_name : null
 
+  network_interfaces {
+    associate_public_ip_address = true
+    security_groups = [local.CreateNewSecurityGroup ? aws_security_group.ecs_security_group[0].id : var.security_group_id]
+  }
+
   monitoring {
     enabled = true
   }
 
-  vpc_security_group_ids = [ local.CreateNewSecurityGroup ? aws_security_group.ecs_security_group[0].id : var.security_group_id]
-
-  user_data = base64encode("#!/bin/bash \n echo ECS_CLUSTER=${var.ecs_cluster_name} >> /etc/ecs/ecs.config\n")
+  user_data = base64encode("#!/bin/bash\necho ECS_CLUSTER=${var.ecs_cluster_name} >> /etc/ecs/ecs.config")
 }
 
 resource "aws_autoscaling_group" "ecs_instance_asg" {
   vpc_zone_identifier = local.CreateSubnet1 ? local.CreateSubnet2 ? local.CreateSubnet3 ? [aws_subnet.pub_subnet_az1[0].id, aws_subnet.pub_subnet_az2[0].id, aws_subnet.pub_subnet_az3[0].id] : [aws_subnet.pub_subnet_az1[0].id, aws_subnet.pub_subnet_az2[0].id] : [aws_subnet.pub_subnet_az1[0].id] : var.subnet_ids
   desired_capacity   = 3
-  max_size           = 3
-  min_size           = 0
+  max_size           = 6
+  min_size           = 1
 
   launch_template {
     id = aws_launch_template.ecs_instance_lt.id
-    version = "$Latest"
+    version = aws_launch_template.ecs_instance_lt.latest_version
   }
 }
 
